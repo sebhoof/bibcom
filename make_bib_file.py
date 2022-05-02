@@ -5,8 +5,10 @@ import json
 import pyperclip
 import numpy as np
 
-# User needs to supply their ADS token here
+# User needs to supply their ADS token here or as a file later
 token = ""
+inspire_api_url = "https://labs.inspirehep.net/api/"
+ads_api_url = "https://api.adsabs.harvard.edu/v1/export/bibtex"
 
 def create_payloads(logfilename):
    log_file = open(logfilename, 'r')
@@ -15,39 +17,47 @@ def create_payloads(logfilename):
    arxiv, inspire, doi, nn = [], [], [], []
    for l in log_lines:
       # Read the log file and find missing bib entries
-      if 'Citation' in l:
+      if ("Citation" in l):
          bibcode = l.split('`')[1].split('\'')[0]
-         # DOIs should start with '10.'; check these first
-         if bibcode[:3] == '10.':
-            doi.append(bibcode)
+         # DOIs should start with '10.' or 'doi:'; check these first
+         if ((bibcode[:3] == "10.") or (bibcode[:4] == "doi:")):
+            if not(bibcode in doi):
+               doi.append(bibcode)
+         # Also allow INSPIRE TeX keys of type 'AUTHOR:YEARaaa'
+         elif (':' in bibcode):
+            if not(bibcode in inspire):
+               inspire.append(bibcode)
          # Arxiv ID contains '.' or '/'
-         elif ('.' in bibcode) or ('/' in bibcode):
-            arxiv.append(bibcode)
-         # Also allow INSPIRE TeX keys
-         elif ':' in bibcode:
-            inspire.append(bibcode)
+         elif (('.' in bibcode) or ('/' in bibcode)):
+            if not(bibcode in arxiv):
+               arxiv.append(bibcode)
          # Otherwise, the ID is not known
          else:
-            nn.append(bibcode)
+            if not(bibcode in nn):
+               nn.append(bibcode)
    return [arxiv, inspire, doi, nn]
 
 def reformat_inspire_entry(request, new_key):
    data = request.json()
-   bibstring = requests.get(data['links']['bibtex'])
+   bibstring = requests.get(data['links']['bibtex']).text
    if len(bibstring) > 0: 
-      t1, t2 = bibstring.text.split('{',1)
+      t1, t2 = bibstring.split('{',1)
       t2, t3 = t2.split(',',1)
       return t1 + '{' + new_key + ',' + t3
    else:
-      return ""
+      return ''
 
 def reformat_ads_entries(bibcodes, original_keys):
-   payload = { 'bibcode': bibcodes }
+   payload = { 'bibcode': bibcodes, 'sort': "year desc" }
    serialized_payload = json.dumps(payload)
-   data = requests.post("https://api.adsabs.harvard.edu/v1/export/bibtex", 
-                        headers={'Authorization': 'Bearer ' + token},
-                        data=serialized_payload)
-   bibfile_lines = data.json()['export'].splitlines()
+   data = requests.post(ads_api_url, 
+                        headers = { 'Authorization': 'Bearer ' + token },
+                        data = serialized_payload)
+   try:
+      bibfile_lines = data.json()['export'].splitlines()
+   except:
+      print("# An error occured when querying ADS.")
+      return ''
    keyword_type = "eprint"
    if bibcodes[0][0] == "d":
       keyword_type = "doi"
@@ -61,7 +71,12 @@ def reformat_ads_entries(bibcodes, original_keys):
                 i += 1
                 l = bibfile_lines[i]
             id = l.split('{')[1][:-2]
-            original_key = [s for s in original_keys if id in s][0]
+            original_key = [s for s in original_keys if id in s]
+            if len(original_key) > 0:
+               original_key = original_key[0]
+            else:
+               # Assume this is a 1-query with INSPIRE key
+               original_key = original_keys[0]
             bibfile_lines[i0] = tmp[0] + '{' + original_key + ','
    return ''.join([b+'\n' for b in bibfile_lines])
 
@@ -83,45 +98,59 @@ def make_bib_file(payloads, bibfile="", print_results=False):
                dummy_tex_file.write("\cite{{{:s}}}\n".format(e))
          dummy_tex_file.close()
       else:
-         url = 'https://labs.inspirehep.net/api/'
          for x in arxiv:
-            r = requests.get(url+'/arxiv/'+str(x))
+            r = requests.get(inspire_api_url+'arxiv/'+str(x))
             bib_entries += reformat_inspire_entry(r, x)
          for x in doi:
-            r = requests.get(url+'/doi/'+str(x))
+            r = requests.get(inspire_api_url+'doi/'+str(x))
             bib_entries += reformat_inspire_entry(r, x)
          for x in inspire:
             # For some reason, the INSPIRE API cannot handle its own TeX keys
             # Need to perform a regular query instead
-            r = requests.get(url+'/literature?q='+str(x))
+            r = requests.get(inspire_api_url+'literature?q='+str(x))
             bib_entries += reformat_inspire_entry(r, x)
    else:
       print("# ADS token supplied. Will use ADS for all bib entries.")
       if len(arxiv) > 0:
-         arxiv_mod = [x if x[0]=="a" else "arXiv:"+x for x in arxiv]
+         arxiv_mod = [x if x[:2]=="ar" else "arXiv:"+x for x in arxiv]
          bib_entries += reformat_ads_entries(arxiv_mod, arxiv)
       if len(doi) > 0:
-         doi_mod = [x if x[0]=="d" else "doi:"+x for x in doi]
+         doi_mod = [x if x[:3]=="doi" else "doi:"+x for x in doi]
          bib_entries += reformat_ads_entries(doi_mod, doi)
       n_inspire = len(inspire)
       if n_inspire > 7:
          print("# WARNING: The INSPIRE API is limited to 15 queries/5 sec (need 2 queries/entry).")
-         print("# {:d} entries requested; this will take about {:.0f} seconds".format(n_inspire, 5*n_inspire//7))
-      for i,x in enumerate(inspire):
-         if i % 8 == 0:
-            time.sleep(5)
-         r = requests.get(url+'/literature?q='+str(x))
-         temp = reformat_inspire_entry(r, x)
-         # Try to get ADS entries via arXiv ID or DOI
-         arxiv_id = temp.split("eprint = \"")[1].split("\",")[0]
-         doi_id = temp.split("doi = \"")[1].split("\",")[0]
-         if len(arxiv_id) > 0:
-            bib_entries += reformat_ads_entries(["arXiv:"+arxiv_id], x)
-         elif len(doi_id) > 0:
-            bib_entries += reformat_ads_entries(["doi:"+doi_id], x)
+         dt = 5*n_inspire//7
+         if dt > 60.0:
+            dt = "{:.1f} mins".format(dt/60.0)
          else:
-            print("# Could not get an ADS entry for {:s}; use INSPIRE instead.".format(x))
-            bib_entries += temp
+            dt = "{:.0f} secs".format(dt)
+         print("# {:d} entries requested; this will take about {:s}.".format(n_inspire, dt))
+      for i,x in enumerate(inspire):
+         if (i > 0) and (i % 7) == 0:
+            time.sleep(5)
+         try:
+            r = requests.get(inspire_api_url+'literature?q='+str(x))
+         except:
+            print("# An error occured while querying INSPIRE.")
+            continue
+         temp = reformat_inspire_entry(r, x)
+         if temp=="":
+            print("# Could not find an INSPIRE entry for {:s}, which looks like an INSPIRE key!".format(x))
+            continue
+         else:
+            # Try to get ADS entries via arXiv ID or DOI
+            arxiv_id = temp.split("eprint = \"")
+            doi_id = temp.split("doi = \"")
+            if len(arxiv) == 2:
+               arxiv_id = arxiv_id[1].split("\",")[0]
+               bib_entries += reformat_ads_entries(["arXiv:"+arxiv_id], [x])
+            elif len(doi_id) == 2:
+               doi_id = doi_id[1].split("\",")[0]
+               bib_entries += reformat_ads_entries(["doi:"+doi_id], [x])
+            else:
+               print("# Could not get an ADS entry for {:s}; use INSPIRE instead.".format(x))
+               bib_entries += temp
 
    # Copy the bibfile to the clipboard
    pyperclip.copy(bib_entries)
@@ -170,11 +199,15 @@ if __name__ == "__main__":
    lfile = "main.log"
    bfile = ""
    if len(sys.argv) > 1:
+      # Interate over sys.argv and match arguments to their function
       for a in sys.argv[1:]:
          if "log" in a:
             lfile = a
          if "bib" in a:
             bfile = a
+         if "token" in a:
+            with open(a, 'r') as f:
+               token = f.readline().split('\n')[0]
    
    print("# Generating bib file entries with the physics bib file creator tool v0.9")
    message = "# Will read log file {:s}".format(lfile)
@@ -186,8 +219,7 @@ if __name__ == "__main__":
 
    nn = payloads[-1]
    if len(nn) > 0:
-      print("# There are {:d} unidentifiable bib codes. These are".format(len(nn)))
-      print(nn)
+      print("# There are {:d} unidentifiable bib codes:".format(len(nn)), nn)
 
    make_bib_file(payloads, bibfile=bfile)
 

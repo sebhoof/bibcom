@@ -1,5 +1,6 @@
-# MakeBibFile bibliography creator
-A simple tool for automatically populating a BibTeX bibliography file for physics papers.
+# BibCom -- a BibTeX bibliography creator
+The Biblography Compiler (BibCom) is a simple tool for automatically populating a BibTeX bibliography file for physics (and possibly other) papers.
+
 
 ## Summary
 
@@ -18,30 +19,32 @@ The only requirement is that the keys used in the file are _any_ the following p
 
 The preferred database for queries is ADS; Inspire is used as a fallback option. To use ADS you have to create an account and generate an API token for ADS, which [is explained below](#recommend-additional-steps).
 
+
 ## How to install
 
 ### Minimal install
 
 To install, simply clone the repository
 ```
-git clone https://github.com/sebhoof/make_bib_file
+git clone https://github.com/sebhoof/bibcom
 ```
 and make sure that your local Python supports the following packages: `numpy`, `pyperclip`, and `requests`. The only uncommon package is `pyperclip`, which allows the output of a string to be copied into the clipboard. If in doubt, run
 ```
 python -m pip install numpy pyperclip requests
 ```
 
-### Recommend additional steps
+### Recommended additional steps
+
+You may create an ADS account following [this link](https://ui.adsabs.harvard.edu/user/account/register).
+Apart from getting an API token, this is also useful for creating a custom email alerts for new arXiv papers (no, I am not affiliated with ADS). You can then generate the API token under `Account -> Settings -> API Token`. Paste it into a plain text file and save the file as e.g. `my.token` in your local copy of this repository.
 
 - [ ] Consider adding a `make_install.sh` that appends the path to the `${PATH}` variable
-- [ ] Explain ADS account creating and token.
 
 ## How to use
 
-Simply invoke the script on the log file created by LaTeX. If you main file is named `main.tex`, a your log named `main.log` will be created in the same folder. Running
-
+Simply invoke the script on the log file created by LaTeX. If you main file is named `main.tex`, a log file named `main.log` should be present in the in the same folder as `main.tex`. Running
 ```
-python make_bib_file.py main.log
+python compile_bibliography.py main.log
 ```
 will copy the missing bib entries into your clipboard and you can paste them into your bib file.
 
@@ -50,15 +53,16 @@ To use ADS, you need to also supply your ADS token, e.g. named `my.token`.
 If you provide the name of a bib file, say `/some/folder/my.bib`, the results will be appended to the file and not just pasted to the clipboard. The code will test your bib file for duplicates afterwards.
 
 The order of the arguments is _not_ relevant as long as the files end in `.log`, `.bib`, and `.token`. For example, you may call
-
 ```
-python make_bib_file.py main.log /some/folder/my.bib my.token
+python compile_bibliography.py main.log /some/folder/my.bib my.token
 ```
 
-- [ ] Talk about ADS journal abbrevs
+The ADS BibTeX entries use LaTeX macros to abbreviate some of the commonly encountered journal names, as described [here](https://ui.adsabs.harvard.edu/help/actions/journal-macros).
+For convenience, this repo contains the file [jdefs.tex](jdefs.tex), which you can include in your main LaTeX file preamble via `\include{jdefs}` to take care of this.
+
 
 ## Citation
-If this tool has saved you a lot of time and enabled your research, please consider acknowledging it in your work using the BibTeX entry below or -- better still! -- by generating it automatically by putting `\cite{doi:}` in your paper and letting the tool add it from ADS.
+If this tool has saved you some time and enabled your research, please consider acknowledging it in your work using the BibTeX entry below or -- better still! -- by generating it automatically by putting `\cite{doi:}` in your paper and letting the tool do the rest for you.
 
 ```
 @MISC{doi:,

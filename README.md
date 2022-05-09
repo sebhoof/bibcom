@@ -1,14 +1,14 @@
 # MakeBibFile bibliography creator
-A simple tool for automatically populating a bibliography file for physics papers.
+A simple tool for automatically populating a BibTeX bibliography file for physics papers.
 
 ## Summary
 
 Creating bibliography for scientific papers or theses can take up significant amounts of time.
-In physics, thanks to popular data bases such as [ADS](https://adsabs.harvard.edu) or [Inspire HEP](https://inspirehep.net/) has made this task considerably simpler.
+In physics, popular data bases such as [ADS](https://adsabs.harvard.edu) or [Inspire HEP](https://inspirehep.net/) with BibTeX have made this task fairly simple.
 
 However, adding new entries one by one or a few at a time from these databases can still be time-consuming. The same is true for choosing citation keys and adjusting the bib file accordingly. Long arguments between co-authors about unique and persistent vs memorable keys can ensue.
 
-This tool can mitigate these problems as it automatically generates bib entries from missing citation errors.
+This tool can mitigate these problems by automatically generating bib entries for missing citations.
 The user may populates a bib file by copying the missing entries to the clipboard (good for online tools such as Overleaf) or appending a bib file on disk.
 The only requirement is that the keys used in the file are _any_ the following persistent identifiers:
 
@@ -16,7 +16,7 @@ The only requirement is that the keys used in the file are _any_ the following p
 - a DOI (with or without `doi:` in front)
 - an Inspire key
 
-The preferred database for queries is ADS; Inspire is used as a fallback option.You need to you create an account and generate an API token for ADS, which [is explained below](#recommend-additional-steps).
+The preferred database for queries is ADS; Inspire is used as a fallback option. To use ADS you have to create an account and generate an API token for ADS, which [is explained below](#recommend-additional-steps).
 
 ## How to install
 
@@ -45,20 +45,20 @@ python make_bib_file.py main.log
 ```
 will copy the missing bib entries into your clipboard and you can paste them into your bib file.
 
-It is recommended that you supply your ADS token e.g. named `my.token` to the script.
+To use ADS, you need to also supply your ADS token, e.g. named `my.token`.
 
-You may also supply the name of a bib file, say `my.bib`, the results will be appended to the file and not just pasted to the clipboard. A test is run on your bib file afterwards to detect possible duplicates.
+If you provide the name of a bib file, say `/some/folder/my.bib`, the results will be appended to the file and not just pasted to the clipboard. The code will test your bib file for duplicates afterwards.
 
 The order of the arguments is _not_ relevant as long as the files end in `.log`, `.bib`, and `.token`. For example, you may call
 
 ```
-python make_bib_file.py main.log my.bib my.token
+python make_bib_file.py main.log /some/folder/my.bib my.token
 ```
 
 - [ ] Talk about ADS journal abbrevs
 
 ## Citation
-If this tool has saved you time and enabled your research, please consider acknowledging it in your work using the BibTeX entry below -- or better still by generating it automatically by putting `\cite{doi:}` in your paper!
+If this tool has saved you a lot of time and enabled your research, please consider acknowledging it in your work using the BibTeX entry below or -- better still! -- by generating it automatically by putting `\cite{doi:}` in your paper and letting the tool add it from ADS.
 
 ```
 @MISC{doi:,

@@ -19,8 +19,8 @@ def create_payloads(logfilename):
       # Read the log file and find missing bib entries
       if ("Citation" in l):
          bibcode = l.split('`')[1].split('\'')[0]
-         # DOIs should start with '10.' or 'doi:'; check these first
-         if ((bibcode[:3] == "10.") or (bibcode[:4] == "doi:")):
+         # DOIs should start with '10.' or 'doi'; check these first
+         if ((bibcode[:3] == "10.") or (bibcode[:3] == "doi")):
             if not(bibcode in doi):
                doi.append(bibcode)
          # Also allow INSPIRE TeX keys of type 'AUTHOR:YEARaaa'
@@ -56,7 +56,7 @@ def reformat_ads_entries(bibcodes, original_keys):
    try:
       bibfile_lines = data.json()['export'].splitlines()
    except:
-      print("# An error occured when querying ADS.")
+      print("% An error occured when querying ADS. Website may unreachable.")
       return ''
    keyword_type = "eprint"
    if bibcodes[0][0] == "d":
@@ -86,12 +86,12 @@ def make_bib_file(payloads, bibfile="", print_results=False):
    bib_entries = ""
 
    if token == "":
-      print("# No ADS token supplied in the script. Will now use INSPIRE as a fallback.")
+      print("% No ADS token supplied in the script. Will now use INSPIRE as a fallback.")
       n_total = sum([len(p) for p in payloads[:-1]])
       if n_total > 7:
-         print("# WARNING: The INSPIRE API is limited to 15 queries/5 sec (need 2 queries/entry).")
-         print("# {:d} entries requested; will create the file 'dummy_file.tex' in the current directory instead.".format(n_total))
-         print("# Please upload it to https://inspirehep.net/bibliography-generator")
+         print("% WARNING: The INSPIRE API is limited to 15 queries/5 sec (need 2 queries/entry).")
+         print("% {:d} entries requested; will create the file 'dummy_file.tex' in the current directory instead.".format(n_total))
+         print("% Please upload it to https://inspirehep.net/bibliography-generator")
          dummy_tex_file = open('dummy_file.tex', 'w')
          for p in payloads[:-1]:
             for e in p:
@@ -105,12 +105,12 @@ def make_bib_file(payloads, bibfile="", print_results=False):
             r = requests.get(inspire_api_url+'doi/'+str(x))
             bib_entries += reformat_inspire_entry(r, x)
          for x in inspire:
-            # For some reason, the INSPIRE API cannot handle its own TeX keys
+            # For some reason the INSPIRE API cannot handle INSPIRE TeX keys
             # Need to perform a regular query instead
             r = requests.get(inspire_api_url+'literature?q='+str(x))
             bib_entries += reformat_inspire_entry(r, x)
    else:
-      print("# ADS token supplied. Will use ADS for all bib entries.")
+      print("% ADS token supplied. Will use ADS for all bib entries.")
       if len(arxiv) > 0:
          arxiv_mod = [x if x[:2]=="ar" else "arXiv:"+x for x in arxiv]
          bib_entries += reformat_ads_entries(arxiv_mod, arxiv)
@@ -119,24 +119,28 @@ def make_bib_file(payloads, bibfile="", print_results=False):
          bib_entries += reformat_ads_entries(doi_mod, doi)
       n_inspire = len(inspire)
       if n_inspire > 7:
-         print("# WARNING: The INSPIRE API is limited to 15 queries/5 sec (need 2 queries/entry).")
-         dt = 5*n_inspire//7
-         if dt > 60.0:
-            dt = "{:.1f} mins".format(dt/60.0)
+         dt = 5*(n_inspire//7)
+         if dt > 60:
+            dt = "{:.1f} minutes".format(dt/60.0)
          else:
-            dt = "{:.0f} secs".format(dt)
-         print("# {:d} entries requested; this will take about {:s}.".format(n_inspire, dt))
+            dt = "{:.0f} seconds".format(dt)
+         print("% WARNING: The INSPIRE API is limited to 15 queries/5 sec but {:d} entries were requested.".format(n_inspire))
+         print("%          Need 2 queries/entry, so this will take about {:s}.".format(dt))
       for i,x in enumerate(inspire):
          if (i > 0) and (i % 7) == 0:
             time.sleep(5)
          try:
             r = requests.get(inspire_api_url+'literature?q='+str(x))
          except:
-            print("# An error occured while querying INSPIRE.")
+            print("% An error occured while querying INSPIRE. Website may unreachable.")
             continue
          temp = reformat_inspire_entry(r, x)
-         if temp=="":
-            print("# Could not find an INSPIRE entry for {:s}, which looks like an INSPIRE key!".format(x))
+         num_at_symbols = len(temp.split('@')) - 1
+         if (num_at_symbols != 1):
+            if (num_at_symbols == 0):
+               print("% WARNING. {:s} looks like an INSPIRE key due to the ':' but I could find an INSPIRE entry.".format(x))
+            else:
+               print("% WARNING. {:s} looks like an INSPIRE key due to the ':' but {:d} INSPIRE entries were found. Please check this key manually.".format(x, num_at_symbols))
             continue
          else:
             # Try to get ADS entries via arXiv ID or DOI
@@ -149,7 +153,7 @@ def make_bib_file(payloads, bibfile="", print_results=False):
                doi_id = doi_id[1].split("\",")[0]
                bib_entries += reformat_ads_entries(["doi:"+doi_id], [x])
             else:
-               print("# Could not get an ADS entry for {:s}; use INSPIRE instead.".format(x))
+               print("% Could not get an ADS entry for {:s}; use INSPIRE instead.".format(x))
                bib_entries += temp
 
    # Copy the bibfile to the clipboard
@@ -157,7 +161,7 @@ def make_bib_file(payloads, bibfile="", print_results=False):
 
    # Print results if requested
    if print_results:
-      print("# Bib entries:")
+      print("% Bib entries:")
       print(bib_entries)
 
    # Append to bibfile if requested
@@ -169,7 +173,7 @@ def make_bib_file(payloads, bibfile="", print_results=False):
 
 def check_bib_file_for_duplicates(bibfile):
    arxiv, doi = [], []
-   print("# Checking bib file {:s} for duplicates...".format(bibfile))
+   print("% Checking bib file {:s} for duplicates...".format(bibfile))
    with open(bibfile, 'r') as f:
       for line in f:
          for e in line.split('@'):
@@ -182,17 +186,17 @@ def check_bib_file_for_duplicates(bibfile):
    s, c = np.unique(arxiv, return_counts=True)
    n_d_arxiv = sum(c > 1)
    if n_d_arxiv > 0:
-      print("# WARNING: The following {:d} arXiv IDs are duplicated:".format(n_d_arxiv))
+      print("% The following {:d} arXiv IDs are duplicated:".format(n_d_arxiv))
       print(s[c > 1])
    s, c = np.unique(doi, return_counts=True)
    n_d_doi = sum(c > 1)
    if n_d_doi > 0:
-      print("# WARNING: The following {:d} DOI IDs are duplicated:".format(n_d_doi))
+      print("% The following {:d} DOI IDs are duplicated:".format(n_d_doi))
       print(s[c > 1])
    if n_d_arxiv + n_d_doi > 0:
-      print("# Duplicates detected (see above)! Please remove them from the bib file.")
+      print("% WARNING. Duplicates detected (see above)! Please remove them from the bib file.")
    else:
-      print("# No duplicates detected!")
+      print("% No duplicates detected!")
    
 
 if __name__ == "__main__":
@@ -209,17 +213,17 @@ if __name__ == "__main__":
             with open(a, 'r') as f:
                token = f.readline().split('\n')[0]
    
-   print("# Generating bib file entries with the physics bib file creator tool v0.9")
-   message = "# Will read log file {:s}".format(lfile)
+   print("% Generating bib file entries with the physics bib file creator tool v0.9.")
+   message = "% Will read log file {:s}".format(lfile)
    if bfile != "":
-      message += ", append them to the bib file {:s},".format(bfile)
-   print(message+" and copy them to the clipboard.")
+      message += ", append the results to the bib file {:s},".format(bfile)
+   print(message+" and copy the results to the clipboard.")
 
    payloads = create_payloads(lfile)
 
    nn = payloads[-1]
    if len(nn) > 0:
-      print("# There are {:d} unidentifiable bib codes:".format(len(nn)), nn)
+      print("% There are {:d} unidentifiable bib codes:".format(len(nn)), nn)
 
    make_bib_file(payloads, bibfile=bfile)
 

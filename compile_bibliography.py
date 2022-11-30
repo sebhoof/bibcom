@@ -11,32 +11,36 @@ inspire_api_url = "https://labs.inspirehep.net/api/"
 ads_api_url = "https://api.adsabs.harvard.edu/v1/export/bibtex"
 
 
+def check_and_append(bibcode, lst):
+    if not (bibcode in lst):
+        lst.append(bibcode)
+
+
 # Read the log file and get the missing bibcodes
 def create_payloads(logfilename):
     with open(logfilename, "r") as f:
         log_lines = f.read().split("\n")
-    arxiv, inspire, doi, nn = [], [], [], []
+    arxiv, inspire, doi, ads, nn = [], [], [], [], []
     for l in log_lines:
         # Read the log file and find missing bib entries
         if "Citation" in l:
             bibcode = l.split("`")[1].split("'")[0]
             # DOIs should start with '10.' or 'doi'; check these first
             if (bibcode[:3] == "10.") or (bibcode[:3] == "doi"):
-                if not (bibcode in doi):
-                    doi.append(bibcode)
-            # Arxiv IDs contain '.' or '/'; INSPIRE IDs should not
-            elif ("." in bibcode) or ("/" in bibcode):
-                if not (bibcode in arxiv):
-                    arxiv.append(bibcode)
-            # Also allow INSPIRE TeX keys of type 'AUTHOR:YEARaaa'
+                check_and_append(bibcode, doi)
+            # Arxiv IDs contain 'YYMM.' or '/'; INSPIRE IDs should not
+            elif (bibcode[4] == ".") or ("/" in bibcode):
+                check_and_append(bibcode, arxiv)
+            # Also allow INSPIRE TeX keys of type 'AUTHOR:YYYYaaa'
             elif ":" in bibcode:
-                if not (bibcode in inspire):
-                    inspire.append(bibcode)
+                check_and_append(bibcode, inspire)
+            # Finally, try to identify an ADS code, which is always 19 chars long
+            elif len(bibcode) == 19:
+                check_and_append(bibcode, ads)
             # Otherwise, the ID is not known
             else:
-                if not (bibcode in nn):
-                    nn.append(bibcode)
-    return [arxiv, inspire, doi, nn]
+                check_and_append(bibcode, nn)
+    return [arxiv, inspire, doi, ads, nn]
 
 
 # Reformat the INSPIRE entries
@@ -70,6 +74,8 @@ def reformat_ads_entries(bibcodes, original_keys):
     keyword_type = "eprint"
     if bibcodes[0][0] == "d":
         keyword_type = "doi"
+    elif len(bibcodes[0]) == 19:
+        return "".join([b + "\n" for b in bibfile_lines])
     # Loop over the bibfile entires and replace the original keys
     for i in range(len(bibfile_lines)):
         l = bibfile_lines[i]
@@ -93,20 +99,27 @@ def reformat_ads_entries(bibcodes, original_keys):
 
 # The main function to compile the bibliography
 def compile_bibliography(payloads, bibfile="", print_results=False):
-    arxiv, inspire, doi = payloads[:3]
+    arxiv, inspire, doi, ads = payloads[:-1]
     bib_entries = ""
 
     if token == "":
         print(
             "% No ADS token supplied in the script. Will now use INSPIRE as a fallback."
         )
+        n_ads = len(ads)
+        if n_ads > 0:
+            print(
+                "% Note that {:d} reference(s) with ADS keys will not be added because of this.".format(
+                    n_ads
+                )
+            )
         n_total = sum([len(p) for p in payloads[:-1]])
         if n_total > 7:
             print(
                 "% WARNING. The INSPIRE API is limited to 15 queries/5 sec (need 2 queries/entry)."
             )
             print(
-                "% {:d} entries requested; will create the file 'dummy_file.tex' in the current directory instead.".format(
+                "% {:d} reference(s) requested; will create the file 'dummy_file.tex' in the current directory instead.".format(
                     n_total
                 )
             )
@@ -140,6 +153,8 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
             # Allow both plain DOIs or prepended by "doi:"
             doi_mod = [x if x[:3] == "doi" else "doi:" + x for x in doi]
             bib_entries += reformat_ads_entries(doi_mod, doi)
+        if len(ads) > 0:
+            bib_entries += reformat_ads_entries(ads, ads)
         n_inspire = len(inspire)
         if n_inspire > 7:
             dt = 5 * (n_inspire // 7)
@@ -261,7 +276,7 @@ if __name__ == "__main__":
                 with open(a, "r") as f:
                     token = f.readline().split("\n")[0]
 
-    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.1.")
+    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.2.")
     message = "% Will read log file {:s}".format(lfile)
     if bfile != "":
         message += ", append the results to the bib file {:s},".format(bfile)
@@ -273,9 +288,7 @@ if __name__ == "__main__":
 
     nn = payloads[-1]
     if len(nn) > 0:
-        print(
-            "% WARNING. There were {:d} unidentifiable bib codes:".format(len(nn)), nn
-        )
+        print("% WARNING. Found {:d} unidentifiable bib code(s):".format(len(nn)), nn)
 
     if bfile != "":
         check_bib_file_for_duplicates(bfile)

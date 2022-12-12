@@ -18,28 +18,32 @@ def check_and_append(bibcode, lst):
 
 # Read the log file and get the missing bibcodes
 def create_payloads(logfilename):
-    with open(logfilename, "r") as f:
-        log_lines = f.read().split("\n")
     arxiv, inspire, doi, ads, nn = [], [], [], [], []
-    for l in log_lines:
-        # Read the log file and find missing bib entries
-        if "Citation" in l:
-            bibcode = l.split("`")[1].split("'")[0]
-            # DOIs should start with '10.' or 'doi'; check these first
-            if (bibcode[:3] == "10.") or (bibcode[:3] == "doi"):
-                check_and_append(bibcode, doi)
-            # Arxiv IDs contain 'YYMM.' or '/'; INSPIRE IDs should not
-            elif (bibcode[4] == ".") or ("/" in bibcode):
-                check_and_append(bibcode, arxiv)
-            # Also allow INSPIRE TeX keys of type 'AUTHOR:YYYYaaa'
-            elif ":" in bibcode:
-                check_and_append(bibcode, inspire)
-            # Finally, try to identify an ADS code, which is always 19 chars long
-            elif len(bibcode) == 19:
-                check_and_append(bibcode, ads)
-            # Otherwise, the ID is not known
-            else:
-                check_and_append(bibcode, nn)
+    try:
+        with open(logfilename, "r") as f:
+            log_lines = f.read().split("\n")
+        for l in log_lines:
+            # Read the log file and find missing bib entries
+            if "Citation" in l:
+                bibcode = l.split("`")[1].split("'")[0]
+                # DOIs should start with '10.' or 'doi'; check these first
+                if (bibcode[:3] == "10.") or (bibcode[:3] == "doi"):
+                    check_and_append(bibcode, doi)
+                # Arxiv IDs contain 'YYMM.' or '/'; INSPIRE IDs should not
+                elif (bibcode[4] == ".") or ("/" in bibcode):
+                    check_and_append(bibcode, arxiv)
+                # Also allow INSPIRE TeX keys of type 'AUTHOR:YYYYaaa'
+                elif ":" in bibcode:
+                    check_and_append(bibcode, inspire)
+                # Finally, try to identify an ADS code, which is always 19 chars long
+                elif len(bibcode) == 19:
+                    check_and_append(bibcode, ads)
+                # Otherwise, the ID is not known
+                else:
+                    check_and_append(bibcode, nn)
+    except FileNotFoundError as not_found:
+        print("\n% ERROR! File", not_found.filename, "could not be found!\n")
+        sys.exit()
     return [arxiv, inspire, doi, ads, nn]
 
 
@@ -263,6 +267,7 @@ def check_bib_file_for_duplicates(bibfile):
 
 # If the script is run directly, run the main function
 if __name__ == "__main__":
+    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.2.")
     lfile = "main.log"
     bfile = ""
     if len(sys.argv) > 1:
@@ -273,10 +278,12 @@ if __name__ == "__main__":
             if "bib" in a:
                 bfile = a
             if "token" in a:
-                with open(a, "r") as f:
-                    token = f.readline().split("\n")[0]
+                try:
+                    with open(a, "r") as f:
+                        token = f.readline().split("\n")[0]
+                except FileNotFoundError as not_found:
+                    print("\n% ERROR! File", not_found.filename, "could not be found!\n% ADS token will not be loaded.\n")
 
-    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.2.")
     message = "% Will read log file {:s}".format(lfile)
     if bfile != "":
         message += ", append the results to the bib file {:s},".format(bfile)
@@ -293,4 +300,4 @@ if __name__ == "__main__":
     if bfile != "":
         check_bib_file_for_duplicates(bfile)
 
-    print("% All done!")
+    print("All done. Found and created {:d} bib entries.".format(sum([len(l) for l in payloads[:-1]])))

@@ -5,6 +5,8 @@ import json
 import pyperclip
 import numpy as np
 
+from check_bib import check_bib_file_for_duplicates
+
 # User needs to supply their ADS token in the 'token' variable or later in a file
 token = ""
 inspire_api_url = "https://labs.inspirehep.net/api/"
@@ -73,7 +75,7 @@ def reformat_ads_entries(bibcodes, original_keys):
     try:
         bibfile_lines = data.json()["export"].splitlines()
     except:
-        print("% An error occured when querying ADS. Website may unreachable.")
+        print("% ERROR. The requested entry may not exist on ADS or the ADS website may be unavailable.")
         return ""
     keyword_type = "eprint"
     if bibcodes[0][0] == "d":
@@ -148,7 +150,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                 r = requests.get(inspire_api_url + "literature?q=" + str(x))
                 bib_entries += reformat_inspire_entry(r, x)
     else:
-        print("% ADS token supplied. Will use ADS for all bib entries.")
+        print("% ADS token supplied. Will use ADS where possible to create bib entires.")
         if len(arxiv) > 0:
             # Allow both plain ArXiv numbers or prepended by e.g. "arXiv:" or "arxiv:"
             arxiv_mod = [x if x[:2] == "ar" else "arXiv:" + x for x in arxiv]
@@ -183,7 +185,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                 r = requests.get(inspire_api_url + "literature?q=" + str(x))
             except:
                 print(
-                    "% An error occured while querying INSPIRE. Website may unreachable."
+                    "% An error occured while querying INSPIRE. Website may unavailable."
                 )
                 continue
             temp = reformat_inspire_entry(r, x)
@@ -233,36 +235,6 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
         # If the file does not exist, create it; else append to it
         with open(bibfile, "a") as f:
             f.write(bib_entries)
-
-
-def check_bib_file_for_duplicates(bibfile):
-    arxiv, doi = [], []
-    print("% Checking bib file {:s} for duplicates...".format(bibfile))
-    with open(bibfile, "r") as f:
-        for line in f:
-            for e in line.split("@"):
-                t = e.split("eprint = ")
-                if len(t) > 1:
-                    arxiv.append(t[1].split(",\n")[0][1:-1])
-                t = e.split("doi = ")
-                if len(t) > 1:
-                    doi.append(t[1].split(",\n")[0][1:-1])
-    s, c = np.unique(arxiv, return_counts=True)
-    n_d_arxiv = sum(c > 1)
-    if n_d_arxiv > 0:
-        print("% The following {:d} arXiv IDs are duplicated:".format(n_d_arxiv))
-        print(s[c > 1])
-    s, c = np.unique(doi, return_counts=True)
-    n_d_doi = sum(c > 1)
-    if n_d_doi > 0:
-        print("% The following {:d} DOI IDs are duplicated:".format(n_d_doi))
-        print(s[c > 1])
-    if n_d_arxiv + n_d_doi > 0:
-        print(
-            "% WARNING. Duplicates detected (see above)! Please remove them from the bib file."
-        )
-    else:
-        print("% No duplicates detected!")
 
 
 # If the script is run directly, run the main function

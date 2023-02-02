@@ -7,24 +7,21 @@ The Bibliography Compiler (BibCom) is a simple tool for automatically populating
 
 ## Summary
 
-Creating a bibliography can take up significant amounts of time.
-In physics, popular data bases such as [ADS](https://adsabs.harvard.edu) or [Inspire HEP](https://inspirehep.net/) have made this task fairly simple.
+Creating a BibTeX bibliography is a necessary but tedious tasks for scientific studies such as physics.
+Data bases such as [NASA/ADS](https://adsabs.harvard.edu) or [HEP INSPIRE](https://inspirehep.net/) are an immense help, but adding new entries a few at a time is still time-consuming.
+The same is true for adjusting the bib file accordingly to match the preferred citation key style.
 
-Still, adding new entries one by one or a few at a time is time-consuming.
-The same is true for choosing citation keys and adjusting the bib file accordingly.
-Long arguments between co-authors about persistent vs memorable keys can ensue.
-
-BibCom can mitigate these problems by automatically generating bib entries for missing citations.
-It populates a bib file based on &ldquo;missing citation&rdquo; entries from the LaTeX log file.
-The new bib entries with correct keys will be copied straight to the clipboard (good for online tools such as Overleaf) or appended to a local bib file.
-The only requirement is that the keys used in the file are _any_ the following persistent identifiers:
+Enter BibCom! This tool automatically generates bib entries for missing citations in TeX files from the &ldquo;missing citation&rdquo; entries from the `.log` file.
+The new bib entries will be copied to the clipboard (good for online tools such as [Overleaf](https://www.overleaf.com)) or appended to a local bib file.
+The only requirement is that the citation keys correspond to _any_ combination of the following persistent identifiers:
 
 - an [arXiv](https://arxiv.org/) preprint number (with or without `arXiv:` in front)
 - a DOI (with or without `doi:` in front)
-- an Inspire key
+- a [HEP INSPIRE](https://inspirehep.net/) key
+- a [NASA/ADS](https://ui.adsabs.harvard.edu/) key 
 
-The preferred database for queries is ADS; Inspire is used as a fallback option. To use ADS you have to create an account and generate an API token for ADS, which [is explained below](#recommend-additional-steps).
-
+The preferred database for queries is ADS; INSPIRE is used as a fallback option.
+Note that, to query ADS, you need to create a free account and generate an API token for ADS, which [is explained below](#recommend-additional-steps).
 
 ## How to install
 
@@ -34,7 +31,7 @@ To install, simply clone the repository
 ```
 git clone https://github.com/sebhoof/bibcom
 ```
-and make sure that your local Python supports the following packages: `numpy`, `pyperclip`, and `requests`. The only uncommon package is `pyperclip`, which allows the output of a string to be copied into the clipboard. If in doubt, run
+and make sure that your local Python supports the following packages: `numpy`, `pyperclip`, and `requests`. If in doubt, run
 ```
 python -m pip install numpy pyperclip requests
 ```
@@ -42,39 +39,48 @@ python -m pip install numpy pyperclip requests
 ### Recommended additional steps
 
 Create an ADS account following [this link](https://ui.adsabs.harvard.edu/user/account/register).
-Apart from getting an API token, this is also useful for creating a custom email alerts for new arXiv papers (no, I am not affiliated with ADS).
+Apart from getting an API token, this is also useful for creating a custom email alerts for new arXiv papers.
 You can then generate the API token under `Account -> Settings -> API Token`.
 Paste it into a plain text file and save the file as e.g. `my.token` in your local copy of the BibCom repository.
 
 
-## How to use
+## How to use BibCom
 
-### Quickstart guide
+Compiling your LaTeX paper `[main].tex` creates a log file named `[main].log` in the in the same folder.
+If you are using [Overleaf](https://www.overleaf.com), it can be found by clicking on the &ldquo;Logs and output files&rdquo;, scrolling down and clicking on &ldquo;Other logs and files&rdquo;.
 
-With the LaTeX log file named `main.log` and your ADS API token in the first line of the file `my.token`, run
+Regularily update your bibliography as needed with Bibcom until you are ready to submit.
+At that point, you may want to check your bibliography for duplicates (see [Complete overview](#complete-overview )).
+
+### Quickstart
+
+Providing your ADS API stored in the file `my.token`, which is recommended but optional, run
 ```
-python compile_bibliography.py main.log my.token
+python compile_bib.py [main].log my.token
 ```
-and just paste the results into your bib file afterwards (using Ctrl+V, Cmd+V, or right click and paste).
+and just paste the results into your bib file afterwards (using Ctrl+V, Cmd+V, or right click -> paste).
 
-### Detailed guide
+### Complete overview 
 
-If you main file is named `main.tex`, a log file named `main.log` should be present in the in the same folder as `main.tex`. Running
+The full range of options for `compile_bib.py` also includes adding the name of a bib file `/some/folder/to/my.bib` i.e. this is an optional argument:
 ```
-python compile_bibliography.py main.log
+python compile_bib.py [main].log my.token /some/folder/to/my.bib
 ```
-will copy the missing bib entries into your clipboard and you can paste them into your bib file.
+In this case, the new bib entires will be additionally appended to the file.
+If the file `/some/folder/to/my.bib` does not exist, it will be created.
+Supplying a bib file, the code will automatically check your bib file for duplicates.
 
-To use ADS, you need to supply your ADS token in a text file e.g. named `my.token`.
-
-If you provide the name of a bib file, say `/some/folder/my.bib`, the results will additionally be appended to the file.
-Should the file not exist, a new file with that name will be created.
-The code will test your bib file for duplicates.
-
-The order of the arguments and the names of the files are _not_ relevant as long as the files end in `.log`, `.bib`, and `.token`. For example, you may call
+Note that the order of the arguments and the names of the files are _not_ relevant as long as the files end in `.log`, `.bib`, and `.token`. For example, you may call
 ```
-python compile_bibliography.py main.log /some/folder/my.bib my.token
+python compile_bib.py alices.token crazy_project.log
 ```
 
 The ADS BibTeX entries use LaTeX macros to abbreviate some of the commonly encountered journal names, as described [here](https://ui.adsabs.harvard.edu/help/actions/journal-macros).
 For convenience, this repo contains the file [jdefs.tex](jdefs.tex), which can be included in your LaTeX file preamble via `\include{jdefs}`.
+
+To check an exiting bib file `/some/folder/to/my.bib` for duplicates, run
+```
+python check_bib.py /some/folder/to/my.bib
+```
+The check is based on arXiv and DOIs since these are most commonly used.
+The code will print the names of any duplicates that the user needs to fix.

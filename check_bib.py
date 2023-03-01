@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def check_bib_file_for_duplicates(bibfile):
     arxiv, doi = [], []
     print("% Checking bib file {:s} for duplicates...".format(bibfile))

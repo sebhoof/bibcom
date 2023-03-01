@@ -29,7 +29,7 @@ def create_payloads(logfilename):
             if "Citation" in l:
                 bibcode = l.split("`")[1].split("'")[0]
                 try:
-                    potential_arxiv = (bibcode[4] == ".")
+                    potential_arxiv = bibcode[4] == "."
                 except IndexError:
                     potential_arxiv = False
                 # DOIs should start with '10.' or 'doi'; check these first
@@ -79,7 +79,9 @@ def reformat_ads_entries(bibcodes, original_keys):
     try:
         bibfile_lines = data.json()["export"].splitlines()
     except:
-        print("% ERROR. The requested entry may not exist on ADS or the ADS website may be unavailable.")
+        print(
+            "% ERROR. The requested entry may not exist on ADS or the ADS website may be unavailable."
+        )
         return ""
     keyword_type = "eprint"
     if bibcodes[0][0] == "d":
@@ -154,7 +156,9 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                 r = requests.get(inspire_api_url + "literature?q=" + str(x))
                 bib_entries += reformat_inspire_entry(r, x)
     else:
-        print("% ADS token supplied. Will use ADS where possible to create bib entires.")
+        print(
+            "% ADS token supplied. Will use ADS where possible to create bib entires."
+        )
         if len(arxiv) > 0:
             # Allow both plain ArXiv numbers or prepended by e.g. "arXiv:" or "arxiv:"
             arxiv_mod = [x if x[:2] == "ar" else "arXiv:" + x for x in arxiv]
@@ -258,7 +262,11 @@ if __name__ == "__main__":
                     with open(a, "r") as f:
                         token = f.readline().split("\n")[0]
                 except FileNotFoundError as not_found:
-                    print("\n% ERROR! File", not_found.filename, "could not be found!\n% ADS token will not be loaded.\n")
+                    print(
+                        "\n% ERROR! File",
+                        not_found.filename,
+                        "could not be found!\n% ADS token will not be loaded.\n",
+                    )
 
     message = "% Will read log file {:s}".format(lfile)
     if bfile != "":
@@ -276,4 +284,8 @@ if __name__ == "__main__":
     if bfile != "":
         check_bib_file_for_duplicates(bfile)
 
-    print("All done. Found and created {:d} bib entries.".format(sum([len(l) for l in payloads[:-1]])))
+    print(
+        "All done. Found and created {:d} bib entries.".format(
+            sum([len(l) for l in payloads[:-1]])
+        )
+    )

@@ -27,4 +27,4 @@ def check_bib_file_for_duplicates(bibfile):
             "% WARNING. Duplicates detected (see above)! Please remove them from the bib file."
         )
     else:
-        print("% No duplicates detected!")
+        print("% Congrats, no duplicates detected!")

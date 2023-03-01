@@ -28,11 +28,15 @@ def create_payloads(logfilename):
             # Read the log file and find missing bib entries
             if "Citation" in l:
                 bibcode = l.split("`")[1].split("'")[0]
+                try:
+                    potential_arxiv = (bibcode[4] == ".")
+                except IndexError:
+                    potential_arxiv = False
                 # DOIs should start with '10.' or 'doi'; check these first
                 if (bibcode[:3] == "10.") or (bibcode[:3] == "doi"):
                     check_and_append(bibcode, doi)
                 # Arxiv IDs contain 'YYMM.' or '/'; INSPIRE IDs should not
-                elif (bibcode[4] == ".") or ("/" in bibcode):
+                elif (potential_arxiv) or ("/" in bibcode):
                     check_and_append(bibcode, arxiv)
                 # Also allow INSPIRE TeX keys of type 'AUTHOR:YYYYaaa'
                 elif ":" in bibcode:
@@ -174,7 +178,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                 )
             )
             print(
-                "%          Need 2 queries/key, so this will take about {:s}.".format(
+                "%          Need 2 queries/key, so this will take about {:s} (unless there are more errors).".format(
                     dt
                 )
             )
@@ -193,13 +197,13 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
             if num_at_symbols != 1:
                 if num_at_symbols == 0:
                     print(
-                        "% WARNING. {:s} looks like an INSPIRE TeX key due to the ':' but I could find an INSPIRE entry.".format(
+                        "% WARNING. {:s} looks like an INSPIRE key since it contains a ':', but I could find an INSPIRE entry.".format(
                             x
                         )
                     )
                 else:
                     print(
-                        "% WARNING. {:s} looks like an INSPIRE TeX key due to the ':' but {:d} INSPIRE entries were found. Please check this key manually.".format(
+                        "% WARNING. {:s}  looks like an INSPIRE key since it contains a ':', but {:d} different INSPIRE entries were found. Please check this key manually.".format(
                             x, num_at_symbols
                         )
                     )

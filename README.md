@@ -72,7 +72,7 @@ Supplying a bib file, the code will automatically check your bib file for duplic
 
 Note that the order of the arguments and the names of the files are _not_ relevant as long as the files end in `.log`, `.bib`, and `.token`. For example, you may call
 ```
-python compile_bib.py alices.token crazy_project.log
+python compile_bib.py my.token [main].log
 ```
 
 The ADS BibTeX entries use LaTeX macros to abbreviate some of the commonly encountered journal names, as described [here](https://ui.adsabs.harvard.edu/help/actions/journal-macros).

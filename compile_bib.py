@@ -243,6 +243,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
         # If the file does not exist, create it; else append to it
         with open(bibfile, "a") as f:
             f.write(bib_entries)
+    return bib_entries.count('@')
 
 
 # If the script is run directly, run the main function
@@ -275,7 +276,7 @@ if __name__ == "__main__":
 
     payloads = create_payloads(lfile)
 
-    compile_bibliography(payloads, bibfile=bfile)
+    successes = compile_bibliography(payloads, bibfile=bfile)
 
     nn = payloads[-1]
     if len(nn) > 0:
@@ -285,7 +286,7 @@ if __name__ == "__main__":
         check_bib_file_for_duplicates(bfile)
 
     print(
-        "All done. Found and created {:d} bib entries.".format(
-            sum([len(l) for l in payloads[:-1]])
+        "All done. Found and created {:d} out of {:d} bib entries.".format(
+            successes, sum([len(l) for l in payloads[:-1]])
         )
     )

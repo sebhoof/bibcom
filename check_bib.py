@@ -2,6 +2,22 @@ import numpy as np
 
 
 def check_bib_file_for_duplicates(bibfile):
+    """
+    This function checks a bib file for duplicates and prints the findings.
+
+    Parameters
+    ----------
+    bibfile : str
+        The name of the bib file to be checked.
+
+    Returns
+    -------
+    None
+
+    Prints
+    ------
+        Prints the arXiv and DOI IDs that are duplicated in the bib file.
+    """
     arxiv, doi = [], []
     print("% Checking bib file {:s} for duplicates...".format(bibfile))
     with open(bibfile, "r") as f:

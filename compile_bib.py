@@ -1,25 +1,55 @@
-import sys
+import sys, os
 import time
 import requests
 import json
 import pyperclip
-import numpy as np
 
 from check_bib import check_bib_file_for_duplicates
 
-# User needs to supply their ADS token in the 'token' variable or later in a file
-token = ""
+# User needs to supply their ADS token as the 'token' variable, via then env variable $ADS_API_TOKEN, or later in a file
+token = os.getenv("ADS_API_TOKEN")
 inspire_api_url = "https://labs.inspirehep.net/api/"
 ads_api_url = "https://api.adsabs.harvard.edu/v1/export/bibtex"
 
 
-def check_and_append(bibcode, lst):
+def check_and_append(bibcode: str, lst: list[str]):
+    """
+    This function checks if a bibcode is already being considered and adds it to the list of codes if necessary.
+
+    Parameters
+    ----------
+    bibcode : str
+        A bibcode.
+    lst : list
+        The list to check if it already contains the bibcode
+
+    Returns
+    -------
+    None
+    """
     if not (bibcode in lst):
         lst.append(bibcode)
 
 
-# Read the log file and get the missing bibcodes
-def create_payloads(logfilename):
+def create_payloads(logfilename: str):
+    """
+    Creates a list of lists of bibcodes by sorting the bibcodes according to origin.
+
+    Parameters
+    ----------
+    logfilename : str
+        The name of a LaTeX log file
+
+    Returns
+    -------
+    list[list[str]]
+        List of lists, where the bibcodes are sorted according to origin
+
+    Raises
+    ------
+    FileNotFoundError
+        If the log file cannot be found.
+    """
     arxiv, inspire, doi, ads, nn = [], [], [], [], []
     try:
         with open(logfilename, "r") as f:
@@ -53,8 +83,22 @@ def create_payloads(logfilename):
     return [arxiv, inspire, doi, ads, nn]
 
 
-# Reformat the INSPIRE entries
-def reformat_inspire_entry(request, new_key):
+def reformat_inspire_entry(request: requests.models.Response, new_key: str):
+    """
+    This function reformats an INSPIRE entry.
+
+    Parameters
+    ----------
+    request : requests.models.Response
+        The response from an INSPIRE API request.
+    new_key : str
+        The new key to use for the entry.
+
+    Returns
+    -------
+    str
+        The reformatted entry if found, else "".
+    """
     # Get the INSPIRE results and replace the key of the first entry (if found)
     data = request.json()
     bibstring = requests.get(data["links"]["bibtex"]).text
@@ -66,8 +110,22 @@ def reformat_inspire_entry(request, new_key):
         return ""
 
 
-# Reformat the ADS entries
-def reformat_ads_entries(bibcodes, original_keys):
+def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
+    """
+    This function reformats the ADS entries.
+
+    Parameters
+    ----------
+    bibcodes : list
+        A list of bibcode strings.
+    original_keys : list
+        A list of the corresponding, original bib keys.
+
+    Returns
+    -------
+    str
+        A string of bibfile lines.
+    """
     # Submit multiple missing entires to the ADS API
     payload = {"bibcode": bibcodes, "sort": "year desc"}
     serialized_payload = json.dumps(payload)
@@ -109,8 +167,31 @@ def reformat_ads_entries(bibcodes, original_keys):
     return "".join([b + "\n" for b in bibfile_lines])
 
 
-# The main function to compile the bibliography
 def compile_bibliography(payloads, bibfile="", print_results=False):
+    """
+    This function takes a list of bibcodes and creates a bibliography from them.
+    The results can be appended to a bibfile, printed, and are copied to clipboard for pasting.
+
+    Parameters
+    ----------
+    payloads : list
+        A list of lists of bibcodes.
+    bibfile : str, optional
+        The name of the bibfile to which the bibliography should be appended.
+        If not provided, the bibliography will not be appended to a file.
+    print_results : bool, optional
+        If True, the bibliography will be printed to the console.
+
+    Returns
+    -------
+    int
+        The number of bib entries created.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the log file or the bibfile cannot be found.
+    """
     arxiv, inspire, doi, ads = payloads[:-1]
     bib_entries = ""
 
@@ -151,8 +232,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                 r = requests.get(inspire_api_url + "doi/" + str(x))
                 bib_entries += reformat_inspire_entry(r, x)
             for x in inspire:
-                # For some reason the INSPIRE API cannot handle INSPIRE TeX keys
-                # Need to perform a regular query instead
+                # The INSPIRE API cannot handle INSPIRE TeX keys; need to perform a regular query instead
                 r = requests.get(inspire_api_url + "literature?q=" + str(x))
                 bib_entries += reformat_inspire_entry(r, x)
     else:
@@ -243,12 +323,12 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
         # If the file does not exist, create it; else append to it
         with open(bibfile, "a") as f:
             f.write(bib_entries)
-    return bib_entries.count('@')
+    return bib_entries.count("@")
 
 
 # If the script is run directly, run the main function
 if __name__ == "__main__":
-    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.2.")
+    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.4.")
     lfile = "main.log"
     bfile = ""
     if len(sys.argv) > 1:
@@ -275,7 +355,7 @@ if __name__ == "__main__":
     print(message + " and copy the results to the clipboard.")
 
     payloads = create_payloads(lfile)
-
+    reqs = sum([len(l) for l in payloads[:-1]])
     successes = compile_bibliography(payloads, bibfile=bfile)
 
     nn = payloads[-1]
@@ -286,7 +366,7 @@ if __name__ == "__main__":
         check_bib_file_for_duplicates(bfile)
 
     print(
-        "All done. Found and created {:d} out of {:d} bib entries.".format(
-            successes, sum([len(l) for l in payloads[:-1]])
+        "All done. Found and created {:d} bib {:s} ({:d} requested).".format(
+            successes, ("entry" if successes == 1 else "entries"), reqs
         )
     )

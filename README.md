@@ -2,17 +2,18 @@
 
 [![DOI](https://zenodo.org/badge/485510848.svg)](https://zenodo.org/badge/latestdoi/485510848) [![Licence: MIT](https://img.shields.io/badge/Licence-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-The Bibliography Compiler (BibCom) is a simple tool for automatically populating a BibTeX bibliography file for physics (and possibly other) papers.
+BibCom is a tool that simplifies the creation of a BibTeX bibliography for scientific papers, specifically in the field of physics.
+The tool automatically generates BibTeX entries for missing citations in TeX files from the "missing citation" entries in the log file.
+The new BibTeX entries are copied to the clipboard (useful for online tools such as [Overleaf](https://www.overleaf.com)) or appended to a local BibTeX file.
 
 
-## Summary
+## Introduction
 
-Creating a BibTeX bibliography is a necessary but tedious tasks for scientific studies such as physics.
-Data bases such as [NASA/ADS](https://adsabs.harvard.edu) or [HEP INSPIRE](https://inspirehep.net/) are an immense help, but adding new entries a few at a time is still time-consuming.
+Creating a BibTeX bibliography is necessary but tedious, especially for scientific studies such as physics. Although databases such as [NASA/ADS](https://adsabs.harvard.edu) or [HEP INSPIRE](https://inspirehep.net/) provide an immense help, adding new entries a few at a time is still time-consuming.
 The same is true for adjusting the bib file accordingly to match the preferred citation key style.
 
 Enter BibCom! This tool automatically generates bib entries for missing citations in TeX files from the &ldquo;missing citation&rdquo; entries from the `.log` file.
-The new bib entries will be copied to the clipboard (good for online tools such as [Overleaf](https://www.overleaf.com)) or appended to a local bib file.
+The new bib entries will be copied to the clipboard or appended to a local bib file.
 The only requirement is that the citation keys correspond to _any_ combination of the following persistent identifiers:
 
 - an [arXiv](https://arxiv.org/) preprint number (with or without `arXiv:` in front)
@@ -20,18 +21,14 @@ The only requirement is that the citation keys correspond to _any_ combination o
 - a [HEP INSPIRE](https://inspirehep.net/) key
 - a [NASA/ADS](https://ui.adsabs.harvard.edu/) key 
 
-The preferred database for queries is ADS; INSPIRE is used as a fallback option.
-Note that, to query ADS, you need to create a free account and generate an API token for ADS, which [is explained below](#recommend-additional-steps).
+The preferred database for queries is ADS.
+INSPIRE is used as a fallback option.
+To query ADS, you need to create a free account and generate an API token, [as explained below](#recommend-additional-steps).
 
-## How to install
+## Installation
 
-### Minimal install
-
-To install, simply clone the repository
-```
-git clone https://github.com/sebhoof/bibcom
-```
-and make sure that your local Python supports the following packages: `numpy`, `pyperclip`, and `requests`. If in doubt, run
+Clone the repository and ensure that your local Python installation supports the following packages: `numpy`, `pyperclip`, and `requests`.
+If in doubt, run
 ```
 python -m pip install numpy pyperclip requests
 ```
@@ -54,15 +51,16 @@ At that point, you may want to check your bibliography for duplicates (see [Comp
 
 ### Quickstart
 
-Providing your ADS API stored in the file `my.token`, which is recommended but optional, run
+Simply run
 ```
-python compile_bib.py [main].log my.token
+python compile_bib.py [main].log
 ```
 and just paste the results into your bib file afterwards (using Ctrl+V, Cmd+V, or right click -> paste).
+If you provide your ADS API as the environment variable `ADS_API_TOKEN`, the ADS database will be queried.
 
 ### Complete overview 
 
-The full range of options for `compile_bib.py` also includes adding the name of a bib file `/some/folder/to/my.bib` i.e. this is an optional argument:
+The full range of options for `compile_bib.py` also includes adding the name of a bib file `/some/folder/to/my.bib` or, instead of as an environment variable, providing your ADS key in the file `my.token`:
 ```
 python compile_bib.py [main].log my.token /some/folder/to/my.bib
 ```

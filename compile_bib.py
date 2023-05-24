@@ -6,8 +6,12 @@ import pyperclip
 
 from check_bib import check_bib_file_for_duplicates
 
+# Define the version number
+bibcom_ver = "v0.4"
+
 # User needs to supply their ADS token as the 'token' variable, via then env variable $ADS_API_TOKEN, or later in a file
 token = os.getenv("ADS_API_TOKEN")
+token = "" if token is None else token
 inspire_api_url = "https://labs.inspirehep.net/api/"
 ads_api_url = "https://api.adsabs.harvard.edu/v1/export/bibtex"
 
@@ -193,7 +197,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
         If the log file or the bibfile cannot be found.
     """
     arxiv, inspire, doi, ads = payloads[:-1]
-    bib_entries = ""
+    bib_entries = "% Bibliography entries created with the Bibcom tool "+bibcom_ver+"\n% Available on Github at https://github.com/sebhoof/bibcom\n\n"
 
     if token == "":
         print(
@@ -328,7 +332,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
 
 # If the script is run directly, run the main function
 if __name__ == "__main__":
-    print("% Compiling a bibliography for missing BibTeX entries with BibCom v0.4.")
+    print("% Compiling a bibliography for missing BibTeX entries with BibCom "+bibcom_ver)
     lfile = "main.log"
     bfile = ""
     if len(sys.argv) > 1:

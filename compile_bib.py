@@ -7,7 +7,7 @@ import pyperclip
 from check_bib import check_bib_file_for_duplicates
 
 # Define the version number
-bibcom_ver = "v0.4"
+bibcom_ver = "v0.5"
 
 # User needs to supply their ADS token as the 'token' variable, via then env variable $ADS_API_TOKEN, or later in a file
 token = os.getenv("ADS_API_TOKEN")
@@ -142,8 +142,9 @@ def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
         bibfile_lines = data.json()["export"].splitlines()
     except:
         print(
-            "% ERROR. The requested entry may not exist on ADS or the ADS website may be unavailable."
+            "% ERROR. One or more of the requested entries below may not exist on ADS or the ADS website may be unavailable."
         )
+        print(bibcodes)
         return ""
     keyword_type = "eprint"
     if bibcodes[0][0] == "d":
@@ -197,7 +198,11 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
         If the log file or the bibfile cannot be found.
     """
     arxiv, inspire, doi, ads = payloads[:-1]
-    bib_entries = "% Bibliography entries created with the Bibcom tool "+bibcom_ver+"\n% Available on Github at https://github.com/sebhoof/bibcom\n\n"
+    bib_entries = (
+        "% Bibliography entries created with the Bibcom tool "
+        + bibcom_ver
+        + "\n% Available on Github at https://github.com/sebhoof/bibcom\n\n"
+    )
 
     if token == "":
         print(
@@ -300,7 +305,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                 # Try to get ADS entries via arXiv ID or DOI
                 arxiv_id = temp.split('eprint = "')
                 doi_id = temp.split('doi = "')
-                if len(arxiv) == 2:
+                if len(arxiv_id) == 2:
                     arxiv_id = arxiv_id[1].split('",')[0]
                     bib_entries += reformat_ads_entries(["arXiv:" + arxiv_id], [x])
                 elif len(doi_id) == 2:
@@ -332,7 +337,10 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
 
 # If the script is run directly, run the main function
 if __name__ == "__main__":
-    print("% Compiling a bibliography for missing BibTeX entries with BibCom "+bibcom_ver)
+    print(
+        "% Compiling a bibliography for missing BibTeX entries with BibCom "
+        + bibcom_ver
+    )
     lfile = "main.log"
     bfile = ""
     if len(sys.argv) > 1:

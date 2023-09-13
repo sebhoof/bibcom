@@ -78,8 +78,8 @@ def create_payloads(logfilename: str):
                 # Finally, try to identify an ADS code, which is always 19 chars long
                 elif len(bibcode) == 19:
                     check_and_append(bibcode, ads)
-                # Otherwise, the ID is not known
-                else:
+                # Otherwise, the ID is not known, but only append if string is not empty
+                elif len(bibcode) > 0:
                     check_and_append(bibcode, nn)
     except FileNotFoundError as not_found:
         print("\n% ERROR! File", not_found.filename, "could not be found!\n")
@@ -152,23 +152,41 @@ def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
     elif len(bibcodes[0]) == 19:
         return "".join([b + "\n" for b in bibfile_lines])
     # Loop over the bibfile entires and replace the original keys
-    for i in range(len(bibfile_lines)):
-        l = bibfile_lines[i]
+    expect_new_entry = True
+    for i, l in enumerate(bibfile_lines):
         if len(l) > 0:
             if l[0] == "@":
-                tmp = l.split("{")
-                i0 = i
-                while not (keyword_type in l):
-                    i += 1
-                    l = bibfile_lines[i]
+                if expect_new_entry:
+                    expect_new_entry = False
+                    tmp = l.split("{")
+                    i0 = i
+                else:
+                    print(
+                        "% ERROR. Found an ADS entry using keyword type '"
+                        + keyword_type
+                        + "', but the entry with ADS identifier '"
+                        + tmp[1][:-2]
+                        + "' does not contain that keyword."
+                    )
+                    print(
+                        "%        This can happen for non-article entires; manually correct the original bib keys below"
+                    )
+                    expect_new_entry = True
+            elif keyword_type in l:
                 id = l.split("{")[1][:-2]
                 original_key = [s for s in original_keys if id in s]
                 if len(original_key) > 0:
                     original_key = original_key[0]
+                    original_keys.remove(original_key)
                 else:
                     # Assume this was a single query with INSPIRE key
                     original_key = original_keys[0]
                 bibfile_lines[i0] = tmp[0] + "{" + original_key + ","
+    if len(original_keys) > 0:
+        print(
+            "% WARNING. Could not rename ADS entries for the following user keys; see errors above for more information:",
+            original_keys,
+        )
     return "".join([b + "\n" for b in bibfile_lines])
 
 
@@ -266,12 +284,12 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
             else:
                 dt = "{:.0f} seconds".format(dt)
             print(
-                "% WARNING. The INSPIRE API is limited to 15 queries/5 sec but {:d} TeX keys need to be identified.".format(
+                "% WARNING. The INSPIRE API is limited to 15 queries/5 sec but {:d} keys need to be identified.".format(
                     n_inspire
                 )
             )
             print(
-                "%          Need 2 queries/key, so this will take about {:s} (unless there are more errors).".format(
+                "%          Need 2 queries/key, so this will take over {:s} (unless there are more errors).".format(
                     dt
                 )
             )
@@ -290,7 +308,7 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
             if num_at_symbols != 1:
                 if num_at_symbols == 0:
                     print(
-                        "% WARNING. {:s} looks like an INSPIRE key since it contains a ':', but I could find an INSPIRE entry.".format(
+                        "% WARNING. {:s} looks like an INSPIRE key since it contains a ':', but a corresponding INSPIRE entry couldn't be found.".format(
                             x
                         )
                     )
@@ -378,7 +396,7 @@ if __name__ == "__main__":
         check_bib_file_for_duplicates(bfile)
 
     print(
-        "All done. Found and created {:d} bib {:s} ({:d} requested).".format(
+        "Done. Found and created {:d} bib {:s} ({:d} requested).".format(
             successes, ("entry" if successes == 1 else "entries"), reqs
         )
     )

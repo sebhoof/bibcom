@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using the DOI provided.
+title: BibCom -- a BibTeX bibliography creator
+abstract: BibCom provides easy-to-use Python scripts for generating and checking bibliographies in the physical (and possibly other) sciences. It can submit requests to the popular NASA/ADS and INSPIRE databases using ADS, arXiv, DOI or INSIPIRE identifiers.
+authors:
+  - family-names: Hoof
+    given-names: Sebastian
+    orcid: "https://orcid.org/0000-0002-3517-2561"
+version: 0.5
+date-released: "2023-08-17"
+identifiers:
+  - description: This is a reference to the collection of archived snapshots of BibCom
+    type: doi
+    value: "10.5281/zenodo.6579665"
+license: MIT
+repository-code: "https://github.com/sebhoof/bibcom"

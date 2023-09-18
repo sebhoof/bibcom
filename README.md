@@ -35,10 +35,10 @@ python -m pip install numpy pyperclip requests
 
 ### Recommended additional steps
 
-Create an ADS account following [this link](https://ui.adsabs.harvard.edu/user/account/register).
-Apart from getting an API token, this is also useful for creating a custom email alerts for new arXiv papers.
+Create an ADS account [here](https://ui.adsabs.harvard.edu/user/account/register).
 You can then generate the API token under `Account -> Settings -> API Token`.
-Paste it into a plain text file and save the file as e.g. `my.token` in your local copy of the BibCom repository.
+Paste it into a plain text such as `my.token` in your local BibCom folder.
+As an added benefit, you may be intersted in creating custom email alerts for new arXiv preprints with ADS.
 
 
 ## How to use BibCom

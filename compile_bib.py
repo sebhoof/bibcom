@@ -153,35 +153,36 @@ def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
         return "".join([b + "\n" for b in bibfile_lines])
     # Loop over the bibfile entires and replace the original keys
     expect_new_entry = True
+    imax = len(bibfile_lines) - 1
     for i, l in enumerate(bibfile_lines):
-        if len(l) > 0:
-            if l[0] == "@":
-                if expect_new_entry:
-                    expect_new_entry = False
-                    tmp = l.split("{")
-                    i0 = i
-                else:
-                    print(
-                        "% ERROR. Found an ADS entry using keyword type '"
-                        + keyword_type
-                        + "', but the entry with ADS identifier '"
-                        + tmp[1][:-2]
-                        + "' does not contain that keyword."
-                    )
-                    print(
-                        "%        This can happen for non-article entires; manually correct the original bib keys below"
-                    )
-                    expect_new_entry = True
-            elif keyword_type in l:
-                id = l.split("{")[1][:-2]
-                original_key = [s for s in original_keys if id in s]
-                if len(original_key) > 0:
-                    original_key = original_key[0]
-                    original_keys.remove(original_key)
-                else:
-                    # Assume this was a single query with INSPIRE key
-                    original_key = original_keys[0]
-                bibfile_lines[i0] = tmp[0] + "{" + original_key + ","
+        if (len(l) > 0 and l[0] == "@") or i == imax:
+            if expect_new_entry:
+                tmp = l.split("{")
+                i0 = i
+                expect_new_entry = False
+            else:
+                print(
+                    "% ERROR. Found an ADS entry using keyword type '"
+                    + keyword_type
+                    + "', but the entry with ADS identifier '"
+                    + tmp[1][:-2]
+                    + "' does not contain that keyword."
+                )
+                print(
+                    "%        This can happen for non-article entires; manually correct the original bib keys below"
+                )
+                expect_new_entry = True
+        elif keyword_type in l:
+            id = l.split("{")[1][:-2]
+            original_key = [s for s in original_keys if id in s]
+            if len(original_key) > 0:
+                original_key = original_key[0]
+                original_keys.remove(original_key)
+            else:
+                # Assume this was a single query with INSPIRE key
+                original_key = original_keys[0]
+            bibfile_lines[i0] = tmp[0] + "{" + original_key + ","
+            expect_new_entry = True
     if len(original_keys) > 0:
         print(
             "% WARNING. Could not rename ADS entries for the following user keys; see errors above for more information:",

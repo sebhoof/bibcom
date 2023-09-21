@@ -7,7 +7,7 @@ import pyperclip
 from check_bib import check_bib_file_for_duplicates
 
 # Define the version number
-bibcom_ver = "v0.5"
+bibcom_ver = "v1.0"
 
 # User needs to supply their ADS token as the 'token' variable, via then env variable $ADS_API_TOKEN, or later in a file
 token = os.getenv("ADS_API_TOKEN")

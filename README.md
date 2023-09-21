@@ -68,15 +68,20 @@ In this case, the new bib entires will be additionally appended to the file.
 If the file `/some/folder/to/my.bib` does not exist, it will be created.
 When providing a bib file name, BibCom will automatically check for duplicates.
 
-Note that the order of the arguments and the names of the files do _not_ matter as long as the files end in `.log`, `.bib`, and `.token`. For example, any of the below will work
+Note that the order of the arguments and the names of the files do _not_ matter as long as the files end in `.log`, `.bib`, and `.token`. For example, any of the below will work:
 ```
 python compile_bib.py my.token [main].log
 python compile_bib.py [main].log my.token
 python compile_bib.py /some/folder/to/my.bib [main].log my.token
 ```
 
-The ADS BibTeX entries use LaTeX macros to abbreviate some of the commonly encountered journal names, as described [here](https://ui.adsabs.harvard.edu/help/actions/journal-macros).
-For convenience, this repo contains the file [jdefs.tex](jdefs.tex), which can be downloaded and included in your LaTeX file preamble via `\include{jdefs}`.
+ADS BibTeX entries use LaTeX macros for some journal names, as described [here](https://ui.adsabs.harvard.edu/help/actions/journal-macros).
+This contains the file [jdefs.tex](jdefs.tex), which you can download and include in your LaTeX preamble via `\include{jdefs}` to replace the macros.
+Alternatively, you can supply [jdefs.tex](jdefs.tex) &mdash; or any other `.tex` file in the same format &mdash; as an argument.
+BibCom will then replace all macros in the bibliography accordingly:
+```
+python compile_bib.py [main].log jdefs.tex
+```
 
 To check an exiting bib file `/some/folder/to/my.bib` for duplicates, run
 ```

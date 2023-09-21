@@ -191,6 +191,33 @@ def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
     return "".join([b + "\n" for b in bibfile_lines])
 
 
+def replace_journal_macros(bib_entries: str, jfile: str) -> str:
+    """
+    This function replaces journal macros in a bibfile text.
+
+    Parameters
+    ----------
+    bib_entries : str
+        A string of bibfile lines.
+    jfile : str
+        The name of a journal macro file.
+        Required format for the macro '\jcap' to be named 'JCAP': \def\jcap{JCAP}
+
+    Returns
+    -------
+    str
+        A string of bibfile lines with journal macros replaced.
+    """
+
+    with open(jfile, "r") as f:
+        for l in f.readlines():
+            if l[:4] == "\\def":
+                macro = "{" + l.split("\\def")[1].split("{")[0] + "}"
+                jname = "{" + l.split("{")[1].split("}")[0] + "}"
+                bib_entries = bib_entries.replace(macro, jname)
+    return bib_entries
+
+
 def compile_bibliography(payloads, bibfile="", print_results=False):
     """
     This function takes a list of bibcodes and creates a bibliography from them.
@@ -338,6 +365,10 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
                     )
                     bib_entries += temp
 
+    # Replace journals macros if requested
+    if jfile != "":
+        bib_entries = replace_journal_macros(bib_entries, jfile)
+
     # Copy the bibfile to the clipboard
     pyperclip.copy(bib_entries)
 
@@ -361,7 +392,10 @@ if __name__ == "__main__":
         + bibcom_ver
     )
     lfile = "main.log"
+    # Name of the bibfile to which the bibliography should be appended (optional)
     bfile = ""
+    # Name of the journal macro file (optional)
+    jfile = ""
     if len(sys.argv) > 1:
         # Interate over sys.argv and match arguments to their function
         for a in sys.argv[1:]:
@@ -369,6 +403,8 @@ if __name__ == "__main__":
                 lfile = a
             if "bib" in a:
                 bfile = a
+            if "tex" in a:
+                jfile = a
             if "token" in a:
                 try:
                     with open(a, "r") as f:

@@ -177,10 +177,10 @@ def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
             original_key = [s for s in original_keys if id in s]
             if len(original_key) > 0:
                 original_key = original_key[0]
-                original_keys.remove(original_key)
             else:
                 # Assume this was a single query with INSPIRE key
                 original_key = original_keys[0]
+            original_keys.remove(original_key)
             bibfile_lines[i0] = tmp[0] + "{" + original_key + ","
             expect_new_entry = True
     if len(original_keys) > 0:

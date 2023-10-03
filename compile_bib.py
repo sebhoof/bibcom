@@ -60,7 +60,7 @@ def create_payloads(logfilename: str):
             log_lines = f.read().split("\n")
         for l in log_lines:
             # Read the log file and find missing bib entries
-            if "Citation" in l:
+            if "Citation `" in l:
                 bibcode = l.split("`")[1].split("'")[0]
                 try:
                     potential_arxiv = bibcode[4] == "."

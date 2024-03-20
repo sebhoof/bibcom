@@ -1,8 +1,10 @@
-import sys, os
-import time
-import requests
+import codecs
 import json
+import os
 import pyperclip
+import requests
+import sys
+import time
 
 from check_bib import check_bib_file_for_duplicates
 
@@ -55,8 +57,15 @@ def create_payloads(logfilename: str):
         If the log file cannot be found.
     """
     arxiv, inspire, doi, ads, nn = [], [], [], [], []
+    for enc in ["utf-8", "latin-1"]:
+        try:
+            with codecs.open(logfilename, encoding=enc, mode='r') as f:
+                f.read().split("\n")
+        except:
+            continue
+        break
     try:
-        with open(logfilename, "r") as f:
+        with codecs.open(logfilename, encoding=enc, mode='r') as f:
             log_lines = f.read().split("\n")
         for l in log_lines:
             # Read the log file and find missing bib entries

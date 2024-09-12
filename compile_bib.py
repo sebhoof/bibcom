@@ -91,7 +91,11 @@ def create_payloads(logfilename: str):
                 elif len(bibcode) > 0:
                     check_and_append(bibcode, nn)
     except FileNotFoundError as not_found:
-        print("\n% ERROR! File", not_found.filename, "could not be found!\n")
+        if not_found.filename != "":
+            err_str = "\n% ERROR! File ", not_found.filename, "could not be found!\n"
+        else:
+            err_str = "\n% ERROR! No '.log' file provided!\n"
+        print(err_str)
         sys.exit()
     return [arxiv, inspire, doi, ads, nn]
 
@@ -151,7 +155,7 @@ def reformat_ads_entries(bibcodes: list[str], original_keys: list[str]):
         bibfile_lines = data.json()["export"].splitlines()
     except:
         print(
-            "% ERROR. One or more of the requested entries below may not exist on ADS or the ADS website may be unavailable."
+            "% ERROR. One or more of the requested entries below may not exist on ADS or the ADS website may be currently unavailable."
         )
         print(bibcodes)
         return ""
@@ -258,6 +262,12 @@ def compile_bibliography(payloads, bibfile="", print_results=False):
         + bibcom_ver
         + "\n% Available on Github at https://github.com/sebhoof/bibcom\n\n"
     )
+    
+    try:
+        requests.get(ads_api_url)
+    except requests.exceptions.ConnectionError:
+        print("\n% ERROR. It looks like you're currently not connected to the Internet or the ADS website may be currently unavailable.\n")
+        sys.exit()
 
     if token == "":
         print(
@@ -400,7 +410,7 @@ if __name__ == "__main__":
         "% Compiling a bibliography for missing BibTeX entries with BibCom "
         + bibcom_ver
     )
-    lfile = "main.log"
+    lfile = ""
     # Name of the bibfile to which the bibliography should be appended (optional)
     bfile = ""
     # Name of the journal macro file (optional)
